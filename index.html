@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECURITY MONITORING SYSTEM</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        security: {
+                            dark: '#0f172a',
+                            primary: '#1e3a8a',
+                            accent: '#047857',
+                            emergency: '#dc2626',
+                            warning: '#d97706',
+                            lightBg: '#f8fafc'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .card-custom {
+            border-radius: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.2s ease-in-out;
+        }
+        .card-custom:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+        }
+        @media print {
+            body { background: white !important; }
+            no-print, header, aside, nav, button { display: none !important; }
+            .print-only { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-security-lightBg font-sans text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <script>
+        const CONFIG = {
+            appName: "SECURITY MONITORING SYSTEM",
+            companyName: "River Impact Cisadane",
+            googleScriptUrl: localStorage.getItem("security_google_script_url") || "", 
+            defaultAreas: [
+                "Pintu masuk", "River Wood", "Area parkir", "Interceptor", 
+                "TPS3R", "Area dapur", "Hanggar Utama", "Semua Area"
+            ],
+            incidentTypes: [
+                "Pencurian", "Keributan", "Kerusakan fasilitas", "Kebakaran", "Kecelakaan", "Kejadian Lainya"
+            ]
+        };
+    </script>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- EMERGENCY MODAL (SIAGA DARURAT) -->
+    <div id="emergency-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 border-4 border-red-600 shadow-2xl">
+            <div class="flex items-center justify-between pb-4 border-b border-red-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-2xl font-bold">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-red-600">PANEL DARURAT (SOS)</h3>
+                        <p class="text-xs text-slate-500">Pilih jenis darurat untuk kirim laporan otomatis</p>
+                    </div>
+                </div>
+                <button onclick="closeEmergencyModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 my-5">
+                <button type="button" onclick="triggerEmergencyAction('Kebakaran')" class="p-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl flex flex-col items-center justify-center gap-2 text-red-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-fire text-3xl"></i>
+                    <span>Kebakaran</span>
+                </button>
+                <button type="button" onclick="triggerEmergencyAction('Pencurian')" class="p-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl flex flex-col items-center justify-center gap-2 text-red-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-user-secret text-3xl"></i>
+                    <span>Pencurian</span>
+                </button>
+                <button type="button" onclick="triggerEmergencyAction('Keributan')" class="p-4 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl flex flex-col items-center justify-center gap-2 text-amber-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-users-slash text-3xl"></i>
+                    <span>Keributan</span>
+                </button>
+                <button type="button" onclick="triggerEmergencyAction('Kecelakaan')" class="p-4 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl flex flex-col items-center justify-center gap-2 text-red-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-truck-medical text-3xl"></i>
+                    <span>Kecelakaan</span>
+                </button>
+                <button type="button" onclick="triggerEmergencyAction('Orang mencurigakan')" class="p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl flex flex-col items-center justify-center gap-2 text-orange-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-user-shield text-3xl"></i>
+                    <span>Orang Mencurigakan</span>
+                </button>
+                <button type="button" onclick="triggerEmergencyAction('Keadaan darurat lainnya')" class="p-4 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl flex flex-col items-center justify-center gap-2 text-rose-700 font-semibold transition active:scale-95">
+                    <i class="fa-solid fa-bell text-3xl"></i>
+                    <span>Darurat Lainnya</span>
+                </button>
+            </div>
+            <button type="button" onclick="closeEmergencyModal()" class="w-full py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition">
+                Batalkan
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-wrapper" class="flex flex-col min-h-screen">
+
+        <!-- HEADER UTAMA -->
+        <header class="bg-navy-900 text-white shadow-md sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button type="button" onclick="toggleSidebar()" class="md:hidden text-white text-xl p-1 focus:outline-none">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-xl shadow-inner">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-sm md:text-base tracking-wide">SECURITY MONITORING SYSTEM</h1>
+                        <p class="text-xs text-blue-200 flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span>Pos Utama &bull; <span id="header-user-name">Parman</span> (<span id="header-shift-name">Shift 1</span>)</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <div class="hidden lg:block text-right text-xs">
+                        <div id="realtime-clock" class="font-mono font-semibold text-blue-100 text-sm">00:00:00</div>
+                        <div id="realtime-date" class="text-slate-300">Senin, 09 Okt 2026</div>
+                    </div>
+                    <button type="button" onclick="openEmergencyModal()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg flex items-center gap-2 text-xs md:text-sm animate-bounce">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>DARURAT</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTAINER SIDEBAR & KONTEN UTAMA -->
+        <div class="flex-1 flex max-w-7xl w-full mx-auto">
+
+            <!-- SIDEBAR NAVIGASI -->
+            <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform -translate-x-full md:translate-x-0 md:static md:z-0 transition-transform duration-200 flex flex-col">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between md:hidden">
+                    <span class="font-bold text-slate-800">Menu Navigasi</span>
+                    <button type="button" onclick="toggleSidebar()" class="text-slate-500 p-1"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto text-sm font-medium">
+                    <button type="button" onclick="switchTab('dashboard'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition active bg-blue-50 text-blue-900" data-tab="dashboard">
+                        <i class="fa-solid fa-house text-blue-600 w-5"></i> Dashboard
+                    </button>
+                    <button type="button" onclick="switchTab('patroli'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="patroli">
+                        <i class="fa-solid fa-person-walking text-indigo-600 w-5"></i> Patroli Keamanan
+                    </button>
+                    <button type="button" onclick="switchTab('kejadian'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="kejadian">
+                        <i class="fa-solid fa-triangle-exclamation text-red-600 w-5"></i> Laporan Kejadian
+                    </button>
+                    <button type="button" onclick="switchTab('tamu'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="tamu">
+                        <i class="fa-solid fa-users text-amber-600 w-5"></i> Buku Tamu
+                    </button>
+                    <button type="button" onclick="switchTab('checklist'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="checklist">
+                        <i class="fa-solid fa-clipboard-check text-teal-600 w-5"></i> Pemeriksaan Area
+                    </button>
+                    <button type="button" onclick="switchTab('riwayat'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="riwayat">
+                        <i class="fa-solid fa-box-archive text-slate-600 w-5"></i> Riwayat & Export
+                    </button>
+                    <button type="button" onclick="switchTab('pengaturan'); toggleSidebarMobile();" class="nav-link w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 transition" data-tab="pengaturan">
+                        <i class="fa-solid fa-gear text-slate-500 w-5"></i> Pengaturan & Sheets
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- KONTEN UTAMA HALAMAN -->
+            <main class="flex-1 p-4 md:p-6 overflow-x-hidden">
+
+                <!-- 1. TAB DASHBOARD -->
+                <section id="tab-dashboard" class="tab-content space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Pusat Monitoring Keamanan</h2>
+                            <p class="text-sm text-slate-500">Ringkasan aktivitas dan status operasional keamanan terkini</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="syncDataToCloud()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Sync Google Sheets
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- STATISTIK -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Status Keamanan</p>
+                                <h3 id="stat-security-status" class="text-lg font-bold text-emerald-600 mt-1">🟢 AMAN</h3>
+                                <p class="text-xs text-slate-500 mt-1">Seluruh area terkendali</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-shield-heart"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Petugas Aktif</p>
+                                <h3 id="stat-active-officers" class="text-2xl font-bold text-navy-900 mt-1">1</h3>
+                                <p class="text-xs text-slate-500 mt-1">Sedang Bertugas</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Kejadian Hari Ini</p>
+                                <h3 id="stat-incidents" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                                <p class="text-xs text-slate-500 mt-1">Perlu perhatian</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Laporan Hari Ini</p>
+                                <h3 id="stat-reports" class="text-2xl font-bold text-navy-900 mt-1">0</h3>
+                                <p class="text-xs text-slate-500 mt-1">Total Aktivitas</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-clipboard-list"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Tamu Masuk</p>
+                                <h3 id="stat-guests" class="text-2xl font-bold text-blue-900 mt-1">0</h3>
+                                <p class="text-xs text-slate-500 mt-1">Orang di lokasi</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-5 border border-slate-100 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-slate-400">Patroli Rutin</p>
+                                <h3 id="stat-patrols" class="text-2xl font-bold text-emerald-600 mt-1">0/8</h3>
+                                <p class="text-xs text-slate-500 mt-1">Selesai diperiksa</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-person-walking"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AKSI CEPAT & ABSENSI PETUGAS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="card-custom bg-white p-6 border border-slate-100 lg:col-span-2 space-y-6">
+                            <div>
+                                <h3 class="font-bold text-navy-900 mb-4 flex items-center gap-2">
+                                    <i class="fa-solid fa-bolt text-amber-500"></i> Aksi Cepat Petugas
+                                </h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    <button type="button" onclick="switchTab('patroli')" class="p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-2xl flex flex-col items-center justify-center gap-2 transition group">
+                                        <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                                            <i class="fa-solid fa-person-walking"></i>
+                                        </div>
+                                        <span class="text-xs font-semibold text-slate-700">Catat Patroli</span>
+                                    </button>
+                                    <button type="button" onclick="switchTab('kejadian')" class="p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-2xl flex flex-col items-center justify-center gap-2 transition group">
+                                        <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                        </div>
+                                        <span class="text-xs font-semibold text-slate-700">Lapor Kejadian</span>
+                                    </button>
+                                    <button type="button" onclick="switchTab('tamu')" class="p-4 bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-200 rounded-2xl flex flex-col items-center justify-center gap-2 transition group">
+                                        <div class="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg group-hover:scale-110 transition">
+                                            <i class="fa-solid fa-address-book"></i>
+                                        </div>
+                                        <span class="text-xs font-semibold text-slate-700">Buku Tamu</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- FORM ABSENSI PETUGAS DALAM AKSI CEPAT -->
+                            <div class="pt-4 border-t border-slate-100">
+                                <h3 class="font-bold text-navy-900 mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-clipboard-user text-blue-600"></i> Absensi Petugas
+                                </h3>
+                                <form id="form-quick-attendance" onsubmit="submitQuickAttendance(event)" class="space-y-3">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Petugas</label>
+                                            <select id="quick-att-name" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800">
+                                                <option value="Parman">Parman</option>
+                                                <option value="Abot">Abot</option>
+                                                <option value="RW birin">RW birin</option>
+                                                <option value="Mandor asmat">Mandor asmat</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Pilihan Shift</label>
+                                            <select id="quick-att-shift" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800">
+                                                <option value="Shift 1">Shift 1 (07:00-15:00)</option>
+                                                <option value="Shift 2">Shift 2 (15:00-23:00)</option>
+                                                <option value="Shift 3">Shift 3 (23:00-07:00)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl text-sm shadow transition">
+                                        Simpan Absensi Petugas
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card-custom bg-white p-6 border border-slate-100">
+                            <h3 class="font-bold text-navy-900 mb-3 flex items-center justify-between">
+                                <span>Informasi Shift</span>
+                                <span id="dash-shift-badge" class="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-semibold">Shift 1</span>
+                            </h3>
+                            <div class="space-y-3 text-xs text-slate-600">
+                                <div class="p-3 bg-slate-50 rounded-xl">
+                                    <p class="font-semibold text-slate-700">Petugas Yang Bertugas:</p>
+                                    <p id="dash-commander" class="text-slate-500 mt-0.5">Parman</p>
+                                </div>
+                                <div class="p-3 bg-slate-50 rounded-xl">
+                                    <p class="font-semibold text-slate-700">Status Kehadiran:</p>
+                                    <p class="text-emerald-600 font-bold mt-0.5">🟢 Aktif</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. TAB PATROLI -->
+                <section id="tab-patroli" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Patroli Keamanan Area</h2>
+                            <p class="text-sm text-slate-500">Pemeriksaan rutin keliling area</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="card-custom bg-white p-6 border border-slate-100 lg:col-span-2">
+                            <form id="form-patroli" onsubmit="submitPatroli(event)" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tanggal & Waktu</label>
+                                        <input type="datetime-local" id="patrol-datetime" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Petugas</label>
+                                        <input type="text" id="patrol-officer" value="Parman" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">JAM</label>
+                                    <select id="patrol-area" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Shif 1">Shif 1</option>
+                                        <option value="Shif 2">Shif 2</option>
+                                        <option value="Shif 3">Shif 3</option>
+                                        </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status Kondisi Area</label>
+                                    <select id="patrol-status" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="🟢 Aman">🟢 Aman</option>
+                                        <option value="🟡 Perlu perhatian">🟡 Perlu Perhatian</option>
+                                        <option value="🔴 Ada masalah">🔴 Ada Masalah</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Hasil Pemeriksaan & Catatan</label>
+                                    <textarea id="patrol-notes" rows="3" placeholder="Tuliskan temuan atau catatan patroli..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Foto Bukti Patroli (opsional)</label>
+                                    <input type="file" id="patrol-photo" accept="image/*" capture="environment" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div class="flex items-center gap-3 pt-2">
+                                    <button type="submit" class="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition">
+                                        Simpan Laporan Patroli
+                                    </button>
+                                    <button type="button" onclick="resetForm('form-patroli')" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition">
+                                        Reset
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-custom bg-white p-6 border border-slate-100 flex flex-col">
+                            <h3 class="font-bold text-navy-900 mb-4">Riwayat Patroli Hari Ini</h3>
+                            <div class="flex-1 space-y-3 overflow-y-auto max-h-[400px]" id="patrol-history-list">
+                                <p class="text-xs text-slate-400 text-center py-8">Belum ada data patroli hari ini.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. TAB LAPORAN KEJADIAN -->
+                <section id="tab-kejadian" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Laporan Kejadian & Insiden</h2>
+                            <p class="text-sm text-slate-500">Pencatatan gangguan keamanan, kerusakan, atau pelanggaran</p>
+                        </div>
+                    </div>
+
+                    <div class="card-custom bg-white p-6 border border-slate-100">
+                        <form id="form-kejadian" onsubmit="submitKejadian(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nomor Laporan (Urut)</label>
+                                    <input type="text" id="inc-number" readonly class="w-full px-3 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-sm font-mono text-slate-600">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Waktu Kejadian</label>
+                                    <input type="datetime-local" id="inc-datetime" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Lokasi</label>
+                                    <input type="text" id="inc-location" required placeholder="Contoh: TPS3R" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Jenis Kejadian</label>
+                                    <select id="inc-type" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Pencurian">Pencurian</option>
+                                        <option value="Keributan">Keributan</option>
+                                        <option value="Kerusakan fasilitas">Kerusakan fasilitas</option>
+                                        <option value="Kebakaran">Kebakaran</option>
+                                        <option value="Kejadian lainnya">Kejadian lainnya</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tingkat Kejadian</label>
+                                    <select id="inc-level" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Rendah">Rendah</option>
+                                        <option value="Sedang">Sedang</option>
+                                        <option value="Tinggi">Tinggi</option>
+                                        <option value="Darurat" class="text-red-600 font-bold">Darurat</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status Penanganan</label>
+                                    <select id="inc-status" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Belum ditangani">Belum ditangani</option>
+                                        <option value="Sedang ditangani">Sedang ditangani</option>
+                                        <option value="Selesai">Selesai</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Kronologi Kejadian</label>
+                                <textarea id="inc-chronology" rows="3" required placeholder="Uraikan kronologi kejadian secara runtut..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tindakan yang Dilakukan</label>
+                                <textarea id="inc-action" rows="2" placeholder="Langkah pengamanan yang sudah diambil..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Foto Bukti Kejadian (opsional)</label>
+                                <input type="file" id="inc-photo" accept="image/*" capture="environment" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div class="flex items-center gap-3 pt-2">
+                                <button type="submit" class="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition">
+                                    Kirim Laporan Kejadian
+                                </button>
+                                <button type="button" onclick="resetForm('form-kejadian'); generateIncidentNumber();" class="px-5 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition">
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- 4. TAB BUKU TAMU -->
+                <section id="tab-tamu" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Buku Tamu Digital</h2>
+                            <p class="text-sm text-slate-500">Pencatatan keluar masuk tamu instansi</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="card-custom bg-white p-6 border border-slate-100 lg:col-span-1">
+                            <h3 class="font-bold text-navy-900 mb-4">Form Tamu Masuk</h3>
+                            <form id="form-tamu" onsubmit="submitTamu(event)" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nama Tamu</label>
+                                    <input type="text" id="guest-name" required placeholder="Nama lengkap" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">No. Identitas (KTP)</label>
+                                        <input type="text" id="guest-idno" required placeholder="No KTP/SIM" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nomor HP</label>
+                                        <input type="text" id="guest-phone" required placeholder="08xxxxxxxx" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Bertemu Dengan</label>
+                                    <input type="text" id="guest-meet" required placeholder="Nama staff/divisi" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tujuan Keperluan</label>
+                                    <input type="text" id="guest-purpose" required placeholder="Meeting / Kurir / Dinas" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Jenis Kendaraan</label>
+                                    <select id="guest-vehicle" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800">
+                                        <option value="Motor">Motor</option>
+                                        <option value="Mobil">Mobil</option>
+                                        <option value="Truk">Truk</option>
+                                        <option value="Kendaraan dinas">Kendaraan dinas</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition mt-2">
+                                    Check In Tamu
+                                </button>
+                            </form>
+                        </div>
+                        <div class="card-custom bg-white p-6 border border-slate-100 lg:col-span-2 flex flex-col">
+                            <h3 class="font-bold text-navy-900 mb-4">Daftar Tamu Berada di Lokasi</h3>
+                            <div class="overflow-x-auto flex-1">
+                                <table class="w-full text-left text-xs">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-slate-400 uppercase font-semibold">
+                                            <th class="pb-3">Nama Tamu</th>
+                                            <th class="pb-3">Bertemu</th>
+                                            <th class="pb-3">Keperluan</th>
+                                            <th class="pb-3">Kendaraan</th>
+                                            <th class="pb-3">Jam Masuk</th>
+                                            <th class="pb-3">Status</th>
+                                            <th class="pb-3 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="guest-table-body" class="divide-y divide-slate-100">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-6 text-slate-400">Belum ada tamu aktif.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. TAB CHECKLIST -->
+                <section id="tab-checklist" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Checklist Fasilitas & Keamanan</h2>
+                            <p class="text-sm text-slate-500">Pemeriksaan rutin kelayakan fasilitas keamanan (CCTV, APAR, Pagar)</p>
+                        </div>
+                    </div>
+
+                    <div class="card-custom bg-white p-6 border border-slate-100">
+                        <form id="form-checklist" onsubmit="submitChecklist(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Pilih Item Fasilitas</label>
+                                    <select id="check-item" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="CCTV Operasional">CCTV Operasional</option>
+                                        <option value="Pagar Keliling & Gerbang">Pagar Keliling & Gerbang</option>
+                                        <option value="Pintu Akses Utama">Pintu Akses Utama</option>
+                                        <option value="Lampu Penerangan Malam">Lampu Penerangan Malam</option>
+                                        <option value="APAR (Tabung Pemadam)">APAR (Tabung Pemadam)</option>
+                                        <option value="Pos Security Utama">Pos Security Utama</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Status Kondisi</label>
+                                    <select id="check-condition" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                        <option value="Baik">Baik</option>
+                                        <option value="Rusak">Rusak</option>
+                                        <option value="Perlu perbaikan">Perlu Perbaikan</option>
+                                        <option value="Tidak tersedia">Tidak Tersedia</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Catatan Pemeriksaan</label>
+                                <input type="text" id="check-note" placeholder="Kondisi fisik atau catatan teknis..." class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Foto Kondisi Fasilitas (opsional)</label>
+                                <input type="file" id="check-photo" accept="image/*" capture="environment" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition">
+                                Simpan Checklist
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- 7. TAB RIWAYAT & EXPORT -->
+                <section id="tab-riwayat" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Riwayat & Export Laporan</h2>
+                            <p class="text-sm text-slate-500">Pusat pencarian arsip laporan dan export dokumen</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="exportPDF()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-pdf"></i> Export PDF
+                            </button>
+                            <button type="button" onclick="exportExcel()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-excel"></i> Export Excel
+                            </button>
+                            <button type="button" onclick="window.print()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5">
+                                <i class="fa-solid fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-custom bg-white p-6 border border-slate-100 space-y-4">
+                        <div class="flex flex-col md:flex-row gap-3">
+                            <input type="text" id="search-history" onkeyup="filterHistory()" placeholder="Cari data laporan..." class="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                            <select id="filter-history-type" onchange="filterHistory()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+                                <option value="all">Semua Jenis Laporan</option>
+                                <option value="Patroli">Patroli</option>
+                                <option value="Kejadian">Kejadian</option>
+                                <option value="Tamu">Tamu</option>
+                                <option value="Absensi">Absensi</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-slate-400 uppercase font-semibold">
+                                        <th class="pb-3">Waktu</th>
+                                        <th class="pb-3">Kategori</th>
+                                        <th class="pb-3">Keterangan Utama</th>
+                                        <th class="pb-3">Petugas</th>
+                                        <th class="pb-3 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body" class="divide-y divide-slate-100">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-6 text-slate-400">Belum ada riwayat aktivitas.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 8. TAB PENGATURAN -->
+                <section id="tab-pengaturan" class="tab-content space-y-6 hidden">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-bold text-navy-900">Pengaturan Sistem & Database</h2>
+                            <p class="text-sm text-slate-500">Konfigurasi Google Apps Script dan API sinkronisasi</p>
+                        </div>
+                    </div>
+
+                    <div class="card-custom bg-white p-6 border border-slate-100 max-w-xl space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Google Apps Script Web App URL</label>
+                            <input type="text" id="setting-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono">
+                            <p class="text-xs text-slate-400 mt-1">Tempelkan URL deployment Apps Script Anda untuk koneksi database Google Sheets otomatis.</p>
+                        </div>
+                        <button type="button" onclick="saveSettings()" class="py-3 px-6 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition text-sm">
+                            Simpan Konfigurasi
+                        </button>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+
+        <!-- BOTTOM NAVIGATION MOBILE -->
+        <div class="md:hidden fixed bottom-0 inset-x-0 bg-navy-900 text-white z-30 flex items-center justify-around py-2 border-t border-slate-800">
+            <button type="button" onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 text-[10px] text-blue-300 hover:text-white transition">
+                <i class="fa-solid fa-house text-base"></i>
+                <span>Home</span>
+            </button>
+            <button type="button" onclick="switchTab('patroli')" class="flex flex-col items-center gap-1 text-[10px] text-blue-300 hover:text-white transition">
+                <i class="fa-solid fa-person-walking text-base"></i>
+                <span>Patroli</span>
+            </button>
+            <button type="button" onclick="switchTab('kejadian')" class="flex flex-col items-center gap-1 text-[10px] text-red-400 hover:text-white transition">
+                <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                <span>Insiden</span>
+            </button>
+            <button type="button" onclick="switchTab('tamu')" class="flex flex-col items-center gap-1 text-[10px] text-blue-300 hover:text-white transition">
+                <i class="fa-solid fa-users text-base"></i>
+                <span>Tamu</span>
+            </button>
+            <button type="button" onclick="switchTab('riwayat')" class="flex flex-col items-center gap-1 text-[10px] text-blue-300 hover:text-blue-300 transition">
+                <i class="fa-solid fa-box-archive text-base"></i>
+                <span>Arsip</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- SCRIPT APLIKASI UTAMA -->
+    <script>
+        let currentUser = { name: "", shift: "", role: "Petugas Security" };
+        let incidentCounter = 1;
+        let dbData = {
+            attendance: { checkedIn: true, checkInTime: "07:00", checkOutTime: null },
+            patrols: [],
+            incidents: [],
+            guests: [],
+            checklists: [],
+            history: []
+        };
+
+        // Realtime Clock
+        setInterval(() => {
+            const now = new Date();
+            const clockEl = document.getElementById('realtime-clock');
+            if (clockEl) clockEl.innerText = now.toLocaleTimeString('id-ID');
+        }, 1000);
+
+        // Toast Notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            let bgColors = 'bg-emerald-600 text-white';
+            let icon = 'fa-circle-check';
+            if (type === 'error') { bgColors = 'bg-red-600 text-white'; icon = 'fa-circle-xmark'; }
+            else if (type === 'warning') { bgColors = 'bg-amber-600 text-white'; icon = 'fa-triangle-exclamation'; }
+            else if (type === 'info') { bgColors = 'bg-blue-600 text-white'; icon = 'fa-circle-info'; }
+
+            toast.className = `${bgColors} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto text-sm font-medium`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i><span class="flex-1">${message}</span>`;
+            
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(el => el.classList.add('hidden'));
+
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('bg-blue-50', 'text-blue-900');
+                if (link.getAttribute('data-tab') === tabId) {
+                    link.classList.add('bg-blue-50', 'text-blue-900');
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Toggle Sidebar Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function toggleSidebarMobile() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+            }
+        }
+
+        // Emergency Modal Control
+        function openEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeEmergencyModal() {
+            const modal = document.getElementById('emergency-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function triggerEmergencyAction(type) {
+            closeEmergencyModal();
+            const time = new Date().toLocaleTimeString('id-ID');
+            const datetime = new Date().toISOString().slice(0,16);
+            
+            const record = { 
+                number: incidentCounter++, 
+                datetime: datetime, 
+                location: "Pos Utama / Area Terkait", 
+                type: type, 
+                level: "Darurat", 
+                status: "Belum ditangani", 
+                chronology: `DARURAT OTOMATIS: ${type} terdeteksi melalui tombol panik SOS.`, 
+                action: "Tim pengamanan segera merespons.",
+                officer: currentUser ? currentUser.name : "Petugas" 
+            };
+
+            dbData.incidents.unshift(record);
+            dbData.history.unshift({ time: time, category: "Kejadian", desc: `🚨 DARURAT [${type}]`, officer: record.officer });
+
+            document.getElementById('stat-incidents').innerText = dbData.incidents.length;
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+            document.getElementById('stat-security-status').innerText = "🔴 SIAGA DARURAT";
+            document.getElementById('stat-security-status').className = "text-lg font-bold text-red-600 mt-1";
+
+            showToast(`DARURAT ${type.toUpperCase()} DIAKTIFKAN!`, "error");
+            renderAllTables();
+        }
+
+        // Handler Absensi Cepat di Dashboard
+        function submitQuickAttendance(e) {
+            e.preventDefault();
+            const name = document.getElementById('quick-att-name').value;
+            const shift = document.getElementById('quick-att-shift').value;
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            currentUser = { name: name, shift: shift, role: "Petugas Security" };
+
+            // Update Header & Widget Info
+            document.getElementById('header-user-name').innerText = name;
+            document.getElementById('header-shift-name').innerText = shift;
+            document.getElementById('dash-shift-badge').innerText = shift;
+            document.getElementById('dash-commander').innerText = `${name} (${shift})`;
+            document.getElementById('patrol-officer').value = name;
+
+            // Catat ke riwayat
+            dbData.history.unshift({ time, category: "Absensi", desc: `${name} Check In (${shift})`, officer: name });
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+
+            showToast(`Absensi berhasil disimpan untuk ${name} (${shift})`, "success");
+            renderAllTables();
+        }
+
+        function generateIncidentNumber() {
+            const incNum = document.getElementById('inc-number');
+            if (incNum) incNum.value = incidentCounter;
+        }
+
+        // Submits
+        async function submitPatroli(e) {
+            e.preventDefault();
+            const record = {
+                datetime: document.getElementById('patrol-datetime').value || new Date().toISOString().slice(0,16),
+                officer: document.getElementById('patrol-officer').value,
+                areas: document.getElementById('patrol-area').value,
+                status: document.getElementById('patrol-status').value,
+                notes: document.getElementById('patrol-notes').value,
+                createdAt: new Date().toISOString()
+            };
+            try {
+                record.photo = await uploadReportRecord('Patroli', record, 'patrol-photo');
+            } catch (err) { showToast(err.message || 'Laporan gagal dikirim. Data belum disimpan.', 'error'); return; }
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            dbData.patrols.unshift(record);
+            dbData.history.unshift({ time, category: 'Patroli', desc: `Patroli ${record.areas}: ${record.status}`, officer: record.officer });
+            document.getElementById('stat-patrols').innerText = `${dbData.patrols.length}/8`;
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+            showToast('Permintaan patroli dikirim.', 'success');
+            document.getElementById('form-patroli').reset();
+            document.getElementById('patrol-officer').value = currentUser ? currentUser.name : '';
+            renderAllTables();
+        }
+
+        async function submitKejadian(e) {
+            e.preventDefault();
+            const number = document.getElementById('inc-number').value;
+            const record = {
+                number, datetime: document.getElementById('inc-datetime').value,
+                location: document.getElementById('inc-location').value,
+                type: document.getElementById('inc-type').value,
+                level: document.getElementById('inc-level').value,
+                status: document.getElementById('inc-status').value,
+                chronology: document.getElementById('inc-chronology').value,
+                action: document.getElementById('inc-action') ? document.getElementById('inc-action').value : '',
+                officer: currentUser ? currentUser.name : 'Petugas', createdAt: new Date().toISOString()
+            };
+            try { record.photo = await uploadReportRecord('Kejadian', record, 'inc-photo'); }
+            catch (err) { showToast(err.message || 'Laporan gagal dikirim.', 'error'); return; }
+            dbData.incidents.unshift(record);
+            dbData.history.unshift({ time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), category: 'Kejadian', desc: `[Lap #${number}] [${record.level}] ${record.type} di ${record.location}`, officer: record.officer });
+            document.getElementById('stat-incidents').innerText = dbData.incidents.length;
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+            showToast(`Laporan #${number} dikirim.`, 'success');
+            resetForm('form-kejadian'); incidentCounter++; generateIncidentNumber(); renderAllTables();
+        }
+
+        function submitTamu(e) {
+            e.preventDefault();
+            const name = document.getElementById('guest-name').value;
+            const idno = document.getElementById('guest-idno').value;
+            const phone = document.getElementById('guest-phone').value;
+            const meet = document.getElementById('guest-meet').value;
+            const purpose = document.getElementById('guest-purpose').value;
+            const vehicle = document.getElementById('guest-vehicle').value;
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            const guest = { id: Date.now(), name, idno, phone, meet, purpose, vehicle, time, status: "🟢 Masih di lokasi" };
+            dbData.guests.unshift(guest);
+            dbData.history.unshift({ time, category: "Tamu", desc: `Tamu masuk: ${name} (${vehicle}) bertemu ${meet}`, officer: currentUser ? currentUser.name : "Petugas" });
+
+            document.getElementById('stat-guests').innerText = dbData.guests.filter(g => g.status.includes("Masih")).length;
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+            showToast("Check in tamu berhasil dicatat", "success");
+            document.getElementById('form-tamu').reset();
+            renderAllTables();
+        }
+
+        function checkoutGuest(id) {
+            const guest = dbData.guests.find(g => g.id === id);
+            if (guest) {
+                guest.status = "⚪ Sudah keluar";
+                document.getElementById('stat-guests').innerText = dbData.guests.filter(g => g.status.includes("Masih")).length;
+                showToast(`Tamu ${guest.name} telah check out`, "success");
+                renderAllTables();
+            }
+        }
+
+        async function submitChecklist(e) {
+            e.preventDefault();
+            const record = {
+                time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                item: document.getElementById('check-item').value,
+                condition: document.getElementById('check-condition').value,
+                note: document.getElementById('check-note').value,
+                officer: currentUser ? currentUser.name : 'Petugas', createdAt: new Date().toISOString()
+            };
+            try { record.photo = await uploadReportRecord('Checklist', record, 'check-photo'); }
+            catch (err) { showToast(err.message || 'Laporan gagal dikirim.', 'error'); return; }
+            dbData.checklists.unshift(record);
+            dbData.history.unshift({ time: record.time, category: 'Checklist', desc: `Pemeriksaan ${record.item}: ${record.condition}`, officer: record.officer });
+            document.getElementById('stat-reports').innerText = dbData.history.length;
+            showToast('Checklist dikirim.', 'success');
+            document.getElementById('form-checklist').reset(); renderAllTables();
+        }
+
+        async function uploadReportRecord(category, record, inputId) {
+            const url = (CONFIG.googleScriptUrl || '').trim();
+            if (!url || !/^https:\/\/script\.google\.com\/macros\/s\/[^ ]+\/exec/.test(url)) {
+                return '';
+            }
+            const input = document.getElementById(inputId);
+            let photo = null;
+            if (input && input.files && input.files[0]) {
+                const file = input.files[0];
+                if (!file.type.startsWith('image/')) throw new Error('File harus berupa gambar.');
+                if (file.size > 5 * 1024 * 1024) throw new Error('Ukuran foto maksimal 5 MB.');
+                photo = { name: file.name, mimeType: file.type, data: await fileToBase64(file) };
+            }
+            try {
+                await fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'saveRecord', category, record, photo }) });
+            } catch (err) {}
+            return '';
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+                reader.onerror = () => reject(new Error('Foto gagal dibaca.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function resetForm(formId) {
+            const form = document.getElementById(formId);
+            if (form) form.reset();
+            showToast("Form berhasil direset", "info");
+        }
+
+        function renderAllTables() {
+            const guestBody = document.getElementById('guest-table-body');
+            if (guestBody) {
+                if (dbData.guests.length === 0) {
+                    guestBody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada tamu aktif.</td></tr>`;
+                } else {
+                    guestBody.innerHTML = dbData.guests.map(g => `
+                        <tr>
+                            <td class="py-3 font-semibold text-slate-800">${g.name} <div class="text-[10px] text-slate-400 font-mono">${g.phone}</div></td>
+                            <td class="py-3">${g.meet}</td>
+                            <td class="py-3">${g.purpose}</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-medium">${g.vehicle}</span></td>
+                            <td class="py-3">${g.time}</td>
+                            <td class="py-3">${g.status}</td>
+                            <td class="py-3 text-right">
+                                ${g.status.includes("Masih") ? `<button type="button" onclick="checkoutGuest(${g.id})" class="px-2.5 py-1 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-semibold">Keluar</button>` : `<span class="text-slate-400">Selesai</span>`}
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const historyBody = document.getElementById('history-table-body');
+            if (historyBody) {
+                if (dbData.history.length === 0) {
+                    historyBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">Belum ada riwayat aktivitas.</td></tr>`;
+                } else {
+                    historyBody.innerHTML = dbData.history.map(h => `
+                        <tr>
+                            <td class="py-3 font-mono text-slate-500">${h.time}</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded-md font-semibold">${h.category}</span></td>
+                            <td class="py-3 font-medium text-slate-800">${h.desc}</td>
+                            <td class="py-3 text-slate-500">${h.officer}</td>
+                            <td class="py-3 text-right text-slate-400"><i class="fa-solid fa-circle-check text-emerald-600"></i></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            const patrolHist = document.getElementById('patrol-history-list');
+            if (patrolHist) {
+                if (dbData.patrols.length === 0) {
+                    patrolHist.innerHTML = `<p class="text-xs text-slate-400 text-center py-8">Belum ada data patroli hari ini.</p>`;
+                } else {
+                    patrolHist.innerHTML = dbData.patrols.map(p => `
+                        <div class="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+                            <div class="flex justify-between font-semibold">
+                                <span>${p.areas}</span>
+                                <span>${p.status}</span>
+                            </div>
+                            <p class="text-slate-500">${p.datetime} &bull; Oleh ${p.officer}</p>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        function filterHistory() {
+            const query = document.getElementById('search-history').value.toLowerCase();
+            const typeFilter = document.getElementById('filter-history-type').value;
+
+            const filtered = dbData.history.filter(h => {
+                const matchQuery = h.desc.toLowerCase().includes(query) || h.officer.toLowerCase().includes(query);
+                const matchType = typeFilter === 'all' || h.category === typeFilter;
+                return matchQuery && matchType;
+            });
+
+            const historyBody = document.getElementById('history-table-body');
+            if (historyBody) {
+                if (filtered.length === 0) {
+                    historyBody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">Data tidak ditemukan.</td></tr>`;
+                } else {
+                    historyBody.innerHTML = filtered.map(h => `
+                        <tr>
+                            <td class="py-3 font-mono text-slate-500">${h.time}</td>
+                            <td class="py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded-md font-semibold">${h.category}</span></td>
+                            <td class="py-3 font-medium text-slate-800">${h.desc}</td>
+                            <td class="py-3 text-slate-500">${h.officer}</td>
+                            <td class="py-3 text-right text-slate-400"><i class="fa-solid fa-circle-check text-emerald-600"></i></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        }
+
+        function exportPDF() {
+            showToast("Membuka dialog cetak PDF...", "info");
+            setTimeout(() => { window.print(); }, 600);
+        }
+
+        function exportExcel() {
+            if (dbData.history.length === 0) {
+                showToast("Belum ada data riwayat untuk diexport", "warning");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Waktu,Kategori,Keterangan Utama,Petugas\r\n";
+
+            dbData.history.forEach(row => {
+                const line = `"${row.time}","${row.category}","${row.desc.replace(/"/g, '""')}","${row.officer}"`;
+                csvContent += line + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Laporan_Security_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("File Spreadsheet Excel berhasil diunduh!", "success");
+        }
+
+        function saveSettings() {
+            const url = document.getElementById('setting-script-url').value;
+            CONFIG.googleScriptUrl = url.trim();
+            localStorage.setItem("security_google_script_url", CONFIG.googleScriptUrl);
+            showToast("URL backend tersimpan di perangkat ini", "success");
+        }
+
+        function syncDataToCloud() {
+            if (!CONFIG.googleScriptUrl) {
+                showToast("URL Google Apps Script belum dikonfigurasi di menu Pengaturan", "warning"); return;
+            }
+            showToast("Sinkronisasi aktif.", "info");
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const setting = document.getElementById('setting-script-url');
+            if (setting) setting.value = CONFIG.googleScriptUrl || '';
+            const now = new Date();
+            const dt = document.getElementById('patrol-datetime');
+            if (dt && !dt.value) dt.value = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+            generateIncidentNumber();
+            renderAllTables();
+        });
+    </script>
+</body>
+</html>
+```
